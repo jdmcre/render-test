@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from openai import OpenAI
