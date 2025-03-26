@@ -3,7 +3,6 @@ from openai import OpenAI
 import os
 
 app = FastAPI()
-
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 @app.get("/")
@@ -14,32 +13,35 @@ def root():
 async def run_script(request: Request):
     try:
         body = await request.json()
-        user_input = body.get("prompt", "What should I know about Denver this week?")
+        user_input = body.get("prompt")
+
+        if not user_input:
+            return {"error": "Missing 'prompt' in request body."}
 
         response = client.responses.create(
             model="gpt-4o",
-            input=[{"role": "user", "content": user_input}],
+            tools=[{ "type": "web_search_preview" }],
+            input=user_input,
             text={"format": {"type": "text"}},
             reasoning={},
-            tools=[
-                {
-                    "type": "web_search_preview",
-                    "user_location": {
-                        "type": "approximate",
-                        "country": "US",
-                        "region": "CO",
-                        "city": "Denver"
-                    },
-                    "search_context_size": "medium"
-                }
-            ],
             temperature=1,
-            max_output_tokens=2048,
             top_p=1,
+            max_output_tokens=2048,
             store=True
         )
 
-        return {"response": response.output[0].content}
+        assistant_message = next(
+            (item for item in response.output if item.type == "message"), None
+        )
+
+        if assistant_message:
+            content_blocks = assistant_message.content
+            final_text = "".join(
+                block.text for block in content_blocks if block.type == "output_text"
+            )
+            return {"response": final_text}
+
+        return {"error": "No assistant message returned in response."}
 
     except Exception as e:
         return {"error": str(e)}
