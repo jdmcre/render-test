@@ -1,11 +1,27 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+import openai
+import os
 
 app = FastAPI()
+
+# Set your OpenAI key (set this in Render dashboard under "Environment")
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 @app.get("/")
 def root():
     return {"message": "API is up and running!"}
 
 @app.post("/run-script")
-def run_script():
-    return {"result": "Python script executed successfully!"}
+async def run_script(request: Request):
+    body = await request.json()
+    user_input = body.get("prompt", "Tell me something cool.")
+
+    response = openai.ChatCompletion.create(
+        model="gpt-4o",  # or "gpt-3.5-turbo" if you're conserving tokens
+        messages=[
+            {"role": "system", "content": "You're a helpful assistant."},
+            {"role": "user", "content": user_input}
+        ]
+    )
+
+    return {"response": response['choices'][0]['message']['content']}
