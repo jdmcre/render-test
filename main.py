@@ -11,17 +11,21 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 def root():
     return {"message": "API is up and running!"}
 
-@app.post("/run-script")
+@app.post("/run-script/")
 async def run_script(request: Request):
-    body = await request.json()
-    user_input = body.get("prompt", "Tell me something cool.")
+    try:
+        body = await request.json()
+        user_input = body.get("prompt", "Tell me something cool.")
 
-    response = openai.ChatCompletion.create(
-        model="gpt-4o",  # or "gpt-3.5-turbo" if you're conserving tokens
-        messages=[
-            {"role": "system", "content": "You're a helpful assistant."},
-            {"role": "user", "content": user_input}
-        ]
-    )
+        response = openai.ChatCompletion.create(
+            model="gpt-4",  # or gpt-3.5-turbo
+            messages=[
+                {"role": "system", "content": "You're a helpful assistant."},
+                {"role": "user", "content": user_input}
+            ]
+        )
 
-    return {"response": response['choices'][0]['message']['content']}
+        return {"response": response['choices'][0]['message']['content']}
+
+    except Exception as e:
+        return {"error": str(e)}
